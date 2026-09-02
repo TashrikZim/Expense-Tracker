@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "E:\\Git Control\\Expense-Tracker\\Backend\\Backend.csproj": {}
+    "E:\\Git Control\\Expense-Tracker\\backend\\Backend.csproj": {}
   },
   "projects": {
-    "E:\\Git Control\\Expense-Tracker\\Backend\\Backend.csproj": {
+    "E:\\Git Control\\Expense-Tracker\\backend\\Backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\Git Control\\Expense-Tracker\\Backend\\Backend.csproj",
+        "projectUniqueName": "E:\\Git Control\\Expense-Tracker\\backend\\Backend.csproj",
         "projectName": "Backend",
-        "projectPath": "E:\\Git Control\\Expense-Tracker\\Backend\\Backend.csproj",
+        "projectPath": "E:\\Git Control\\Expense-Tracker\\backend\\Backend.csproj",
         "packagesPath": "C:\\Users\\Tashrik\\.nuget\\packages\\",
-        "outputPath": "E:\\Git Control\\Expense-Tracker\\Backend\\obj\\",
+        "outputPath": "E:\\Git Control\\Expense-Tracker\\backend\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -55,10 +55,6 @@
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",
               "version": "[10.0.11, )"
-            },
-            "Microsoft.AspNetCore.OpenApi": {
-              "target": "Package",
-              "version": "[10.0.10, )"
             },
             "Microsoft.EntityFrameworkCore.Design": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
