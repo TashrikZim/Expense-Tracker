@@ -1,6 +1,4 @@
 namespace Backend.DTOs;
 
-public class LoginDto
-{
-    public required string UserId { get; set; }
-}
+public record RegisterDto(string Email, string Password);
+public record LoginDto(string Email, string Password);

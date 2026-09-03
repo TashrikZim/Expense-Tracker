@@ -1,10 +1,10 @@
-﻿using Backend.Data;
-using Backend.DTOs;
-using Backend.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using Backend.Data;
+using Backend.Models;
+using Backend.DTOs;
 
 namespace Backend.Controllers;
 
@@ -20,22 +20,18 @@ public class TransactionsController : ControllerBase
         _context = context;
     }
 
-    // Security Helper: Extracts the user ID from the cryptographically verified JWT
-    private string GetUserId()
+    private string? GetCurrentUserId()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-            throw new UnauthorizedAccessException("Invalid token claims.");
-
-        return userId;
+        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst("sub")?.Value;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetMyTransactions()
+    public async Task<IActionResult> GetAll()
     {
-        var userId = GetUserId();
+        var userId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        // Tenant Isolation: Only query records matching this specific user
         var transactions = await _context.Transactions
             .Where(t => t.UserId == userId)
             .OrderByDescending(t => t.Date)
@@ -45,38 +41,71 @@ public class TransactionsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateTransaction([FromBody] CreateTransactionDto dto)
+    public async Task<IActionResult> Create([FromBody] CreateTransactionDto dto)
     {
-        var userId = GetUserId();
+        var userId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var transaction = new Transaction
         {
-            UserId = userId, // Forced from token, completely ignoring client input
+            Id = Guid.NewGuid(),
+            UserId = userId,
             Amount = dto.Amount,
             Type = dto.Type,
             Category = dto.Category,
             Account = dto.Account,
             Note = dto.Note,
-            Date = DateTime.UtcNow,
+            Date = dto.Date ?? DateTime.UtcNow,
             CreatedAt = DateTime.UtcNow
         };
 
         _context.Transactions.Add(transaction);
         await _context.SaveChangesAsync();
 
+        return CreatedAtAction(nameof(GetAll), new { id = transaction.Id }, transaction);
+    }
+
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTransactionDto dto)
+    {
+        var userId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var transaction = await _context.Transactions
+            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+
+        if (transaction == null)
+        {
+            return NotFound(new { message = "Transaction not found or unauthorized access." });
+        }
+
+        transaction.Amount = dto.Amount;
+        transaction.Type = dto.Type;
+        transaction.Category = dto.Category;
+        transaction.Account = dto.Account;
+        transaction.Note = dto.Note;
+        if (dto.Date.HasValue)
+        {
+            transaction.Date = dto.Date.Value;
+        }
+
+        await _context.SaveChangesAsync();
         return Ok(transaction);
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteTransaction(Guid id)
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
     {
-        var userId = GetUserId();
+        var userId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var transaction = await _context.Transactions.FindAsync(id);
-        if (transaction == null) return NotFound();
+        var transaction = await _context.Transactions
+            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
 
-        // Hard Stop: Ensure the user actually owns the record they are trying to delete
-        if (transaction.UserId != userId) return Forbid();
+        if (transaction == null)
+        {
+            return NotFound(new { message = "Transaction not found or unauthorized access." });
+        }
 
         _context.Transactions.Remove(transaction);
         await _context.SaveChangesAsync();
