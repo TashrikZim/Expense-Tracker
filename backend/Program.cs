@@ -1,23 +1,27 @@
+using System.Text;
 using Backend.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Read allowed origins from config/environment variable (supports comma-separated origins)
+var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"]?
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    ?? new[] { "http://localhost:3000" };
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
 
 builder.Services.AddControllers();
-// EndpointsApiExplorer is retained for minimal internal routing, but Swagger is gone.
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -33,8 +37,8 @@ builder.Services.AddAuthentication(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = false, // Bypasses missing 'iss' claim check
-        ValidateAudience = false, // Bypasses missing 'aud' claim check
+        ValidateIssuer = false,
+        ValidateAudience = false,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
@@ -45,6 +49,7 @@ var app = builder.Build();
 
 app.UseHttpsRedirection();
 
+// CORS must be called before Authentication and Authorization
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
