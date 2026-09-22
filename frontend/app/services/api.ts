@@ -94,4 +94,15 @@ export async function deleteTransaction(token: string, id: string) {
 
   if (!res.ok) throw new Error('Failed to delete transaction');
   return true;
+
+  export async function fetchMonthlySummary(year: number) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Transactions/summary/monthly?year=${year}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) throw new Error("Failed to fetch monthly summary");
+  return res.json();
+}
 }

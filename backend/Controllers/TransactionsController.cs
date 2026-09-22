@@ -112,4 +112,25 @@ public class TransactionsController : ControllerBase
 
         return NoContent();
     }
+
+    [HttpGet("summary/monthly")]
+    public async Task<ActionResult<IEnumerable<MonthlySummaryDto>>> GetMonthlySummary([FromQuery] int? year)
+    {
+        var targetYear = year ?? DateTime.UtcNow.Year;
+
+        var summary = await _context.Transactions
+            .Where(t => t.Date.Year == targetYear) // Filter by target year, keeping yearly context
+            .GroupBy(t => new { t.Date.Year, t.Date.Month })
+            .Select(g => new MonthlySummaryDto
+            {
+                Year = g.Key.Year,
+                Month = g.Key.Month,
+                TotalIncome = g.Where(t => t.Type == "Income").Sum(t => t.Amount),
+                TotalExpense = g.Where(t => t.Type == "Expense").Sum(t => t.Amount)
+            })
+            .OrderBy(s => s.Month)
+            .ToListAsync();
+
+        return Ok(summary);
+    }
 }
